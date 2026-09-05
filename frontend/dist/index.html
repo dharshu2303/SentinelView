@@ -1,65 +1,846 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SentinelView</title>
+  <title>SentinelView - Transaction Risk Investigation Assistant</title>
   <link rel="stylesheet" href="/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar panel">
-      <div class="brand">
-        <h1>SentinelView</h1>
-        <p>Transaction Risk Investigation Assistant</p>
+  <!-- Top Navigation Header -->
+  <header class="top-header">
+    <div class="header-left">
+      <div class="brand-badge">
+        <svg class="brand-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <text x="12" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none">1</text>
+        </svg>
+        <span class="brand-name">SentinelView</span>
       </div>
-      <div id="customerList" class="customer-list"></div>
+      <span class="brand-separator"></span>
+      <span class="brand-subtitle">Transaction Risk Investigation Assistant</span>
+    </div>
+
+    <div class="header-right">
+      <!-- Theme Switcher Toggle (Light by default) -->
+      <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle theme" title="Toggle Light / Dark mode">
+        <span class="theme-icon sun-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </span>
+        <span class="theme-icon moon-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </span>
+        <span class="theme-text">Light</span>
+      </button>
+
+      <!-- Notification Bell -->
+      <div class="notification-btn" id="headerNotificationBtn" title="Notifications">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span class="notification-dot"></span>
+      </div>
+
+      <!-- Fraud Analyst Profile -->
+      <div class="user-profile">
+        <div class="user-avatar">D</div>
+        <div class="user-meta">
+          <span class="user-name">Dharshini</span>
+          <span class="user-role">Fraud Analyst</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <!-- Left Navigation Sidebar -->
+    <aside class="sidebar-nav">
+      <ul class="nav-links">
+        <li class="nav-item">
+          <a href="#" class="nav-link" data-tab="dashboard">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link active" data-tab="investigate">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>Investigate Customer</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link" data-tab="alerts">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span>Risk Alerts</span>
+            <span class="nav-badge alert-badge" id="riskAlertsBadge">3</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link" data-tab="reports">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Reports</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link" data-tab="settings">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Settings</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Footer Tagline -->
+      <div class="sidebar-footer">
+        <svg class="footer-shield" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <text x="12" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none">1</text>
+        </svg>
+        <div class="footer-tagline">
+          <span>Safer Transactions</span>
+          <span>Stronger Tomorrow</span>
+        </div>
+      </div>
     </aside>
 
-    <main class="workspace">
-      <section class="panel controls">
-        <div>
-          <h2 id="customerTitle">Select a customer</h2>
-          <p id="customerMeta" class="muted"></p>
-        </div>
-        <button id="investigateBtn" class="btn">Run Investigation</button>
-      </section>
-
-      <section class="panel timeline-panel">
-        <h3>Transaction Timeline</h3>
-        <div id="timeline" class="timeline"></div>
-      </section>
-
-      <section class="panel data-grid">
-        <div class="transactions-panel">
-          <h3>Transaction History</h3>
-          <div id="loadingOverlay" class="loading-overlay hidden">
-            <div class="scanline"></div>
-            <p>Investigating patterns…</p>
+    <!-- Main Workspace Container (Dynamic View Tabs) -->
+    <div class="tab-views-container">
+      <!-- ====================================================================
+           VIEW 1: Investigate Customer (Primary 3-Column Workbench)
+           ==================================================================== -->
+      <main class="main-workbench tab-view active" id="view-investigate">
+        <!-- Column 1: Select Customer -->
+        <section class="col-customers panel">
+          <div class="panel-header">
+            <h2>Select Customer</h2>
+            <span class="customer-total-badge" id="customerTotalCount">12</span>
           </div>
-          <div class="table-wrap">
-            <table>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="customerSearch" placeholder="Search by customer ID, name or mobile..." />
+          </div>
+          <div class="customer-list-scroll" id="customerList">
+            <!-- Populated dynamically -->
+          </div>
+        </section>
+
+        <!-- Column 2: Center Investigation Workbench -->
+        <section class="col-center">
+          <!-- Customer Details Header Card -->
+          <div class="customer-header-card panel" id="customerHeader">
+            <div class="ch-left">
+              <div class="ch-avatar" id="customerAvatar">PS</div>
+              <div class="ch-info">
+                <div class="ch-title-row">
+                  <h2 id="customerName">Priya Sharma</h2>
+                  <span class="ch-id" id="customerId">CUST001</span>
+                </div>
+                <div class="ch-meta-row">
+                  <span class="ch-meta-item">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    Customer Since: <strong id="customerSince">2 years 4 months</strong>
+                  </span>
+                  <span class="ch-meta-item">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Last Analysed: <strong id="lastAnalysed">26 Aug 2025, 14:32</strong>
+                  </span>
+                </div>
+                <!-- Extra Customer Details Row -->
+                <div class="ch-extra-meta" id="customerExtraMeta">
+                  <span class="extra-item">A/C: <span id="customerAccountNo">•••• •••• 4821</span> (<span id="customerAccountType">Savings Platinum</span>)</span>
+                  <span class="extra-sep">&bull;</span>
+                  <span class="extra-item">Branch: <span id="customerBranch">Fort Branch, Mumbai</span></span>
+                  <span class="extra-sep">&bull;</span>
+                  <span class="extra-item">Phone: <span id="customerPhone">+91 98201 44821</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="ch-right">
+              <span class="risk-pill-large" id="customerRiskPill">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <span id="customerRiskText">High Risk</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Attention Required Banner -->
+          <div class="attention-banner" id="attentionBanner">
+            <div class="banner-left">
+              <div class="banner-icon-circle">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+              </div>
+              <div class="banner-content">
+                <h3 id="attentionTitle">ATTENTION REQUIRED</h3>
+                <p id="attentionSubtitle">3 risk signals detected across 5 transactions. This activity warrants review.</p>
+              </div>
+            </div>
+            <div class="banner-right">
+              <span class="risk-level-tag" id="riskLevelTag">
+                Risk Level <strong id="riskLevelValue">HIGH</strong>
+              </span>
+            </div>
+          </div>
+
+          <!-- Key Reasons (3 Dynamic Metric Cards) -->
+          <div class="section-block">
+            <h3 class="section-title">Key Reasons</h3>
+            <div class="key-reasons-grid" id="keyReasonsGrid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Flagged Transactions Table -->
+          <div class="section-block panel flagged-tx-panel">
+            <div class="panel-header tx-header-row">
+              <div class="tx-header-left">
+                <h3 id="txTableHeading"><span id="txTableTitle">Flagged Transactions</span> <span class="tx-count-badge" id="flaggedCountBadge">(5)</span></h3>
+                <span id="txFilterNotice" class="tx-filter-notice"></span>
+              </div>
+              <button class="link-btn" id="toggleViewAllBtn">View All &rarr;</button>
+            </div>
+
+            <div class="table-container">
+              <table class="tx-table" id="txTable">
+                <thead>
+                  <tr>
+                    <th class="col-check"><input type="checkbox" id="selectAllCheckbox" /></th>
+                    <th>Txn ID</th>
+                    <th>Date &amp; Time</th>
+                    <th>Description</th>
+                    <th>Payee</th>
+                    <th>Amount (&#8377;)</th>
+                    <th>Channel</th>
+                    <th>Triggered Rules</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="txTableBody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Customer Behaviour Analysis (4 Cards) -->
+          <div class="section-block panel behavior-panel">
+            <h3 class="section-title">Customer Behaviour Analysis</h3>
+            <div class="behavior-grid" id="behaviorGrid">
+              <!-- Card 1: Typical Transfer Amount -->
+              <div class="behavior-card">
+                <div class="b-icon-wrap icon-green">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                  </svg>
+                </div>
+                <div class="b-card-content">
+                  <span class="b-label">Typical Transfer Amount</span>
+                  <span class="b-val text-green" id="bTypicalAmount">&#8377;58,000</span>
+                  <span class="b-sub" id="bTypicalSub">(median, last 90 days)</span>
+                </div>
+              </div>
+
+              <!-- Card 2: Current Transfer Amount -->
+              <div class="behavior-card">
+                <div class="b-icon-wrap icon-red">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                    <polyline points="7 7 17 7 17 17"></polyline>
+                  </svg>
+                </div>
+                <div class="b-card-content">
+                  <span class="b-label">Current Transfer Amount</span>
+                  <span class="b-val text-red" id="bCurrentAmount">&#8377;2,40,000</span>
+                  <span class="b-sub" id="bCurrentSub">(4.1&times; higher)</span>
+                </div>
+              </div>
+
+              <!-- Card 3: Usual Active Hours -->
+              <div class="behavior-card">
+                <div class="b-icon-wrap icon-blue">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
+                <div class="b-card-content">
+                  <span class="b-label">Usual Active Hours</span>
+                  <span class="b-val" id="bUsualHours">9:00 AM &ndash; 7:00 PM</span>
+                  <span class="b-sub" id="bUsualSub">(most activity)</span>
+                </div>
+              </div>
+
+              <!-- Card 4: Current Transaction Time -->
+              <div class="behavior-card">
+                <div class="b-icon-wrap icon-purple">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                  </svg>
+                </div>
+                <div class="b-card-content">
+                  <span class="b-label">Current Transaction Time</span>
+                  <span class="b-val text-purple" id="bCurrentTime">02:13 AM</span>
+                  <span class="b-sub" id="bCurrentTimeSub">(outside usual hours)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transaction Timeline -->
+          <div class="section-block panel timeline-panel">
+            <div class="panel-header tl-header-row">
+              <h3>Transaction Timeline</h3>
+              <div class="tl-legend">
+                <span class="legend-item"><span class="legend-dot dot-normal"></span> Normal</span>
+                <span class="legend-item"><span class="legend-dot dot-flagged"></span> Flagged</span>
+                  <button id="viewAllTxBtn" class="btn btn-secondary btn-sm" style="margin-left: 15px;" onclick="openTxModal()">View All Transactions</button>
+              </div>
+            </div>
+            <div class="timeline-wrapper" id="timelineContainer">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Column 3: Right Panel (Detailed Risk Analysis & AI Brief) -->
+        <section class="col-right">
+          <!-- Detailed Risk Analysis -->
+          <div class="panel risk-analysis-panel">
+            <div class="panel-header ra-header-row">
+              <div class="ra-title-wrap">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <h3>Detailed Risk Analysis</h3>
+              </div>
+              <button class="link-btn" id="viewFullReportTopBtn">View Full Report &rarr;</button>
+            </div>
+
+            <div class="rule-cards-container" id="ruleCardsContainer">
+              <!-- 4 Dynamic Rule Cards -->
+            </div>
+          </div>
+
+          <!-- Investigator Brief (AI Summary) -->
+          <div class="panel ai-brief-panel">
+            <div class="panel-header brief-header-row">
+              <div class="brief-title-wrap">
+                <svg class="brief-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <h3>Investigator Brief (AI Summary)</h3>
+              </div>
+              <span class="gemini-badge">Powered by Gemini</span>
+            </div>
+
+            <div class="brief-body">
+              <p class="brief-narrative" id="briefNarrativeText">
+                Loading investigation analysis…
+              </p>
+
+              <div class="brief-checks-section">
+                <h4>Recommended first checks:</h4>
+                <ol class="brief-checks-list" id="briefChecksList">
+                  <!-- Checks list -->
+                </ol>
+              </div>
+
+              <!-- View AI Report Button -->
+              <button class="btn-full-report" id="openFullReportBtn">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <span>View Full AI Investigation Report &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="quick-actions-panel">
+            <span class="qa-title">Quick Actions</span>
+            <div class="qa-buttons-grid">
+              <button class="qa-btn" id="exportReportBtn" title="Download Word (.doc) or PDF">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Export Report</span>
+              </button>
+              <button class="qa-btn" id="shareBtn" title="Share Brief">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="18" cy="5" r="3"></circle>
+                  <circle cx="6" cy="12" r="3"></circle>
+                  <circle cx="18" cy="19" r="3"></circle>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                <span>Share</span>
+              </button>
+              <button class="qa-btn" id="addNoteBtn" title="Add Investigator Case Note">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                <span>Add Note</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- ====================================================================
+           VIEW 2: Dashboard (Fraud Desk Overview & Live Alert Queue)
+           ==================================================================== -->
+      <main class="tab-view panel-view hidden" id="view-dashboard">
+        <div class="view-header">
+          <div>
+            <h2>Fraud Desk Operations Dashboard</h2>
+            <p class="view-subtitle">Real-time surveillance overview, surveillance metrics, and active alert queue.</p>
+          </div>
+          <div class="view-header-right">
+            <span class="live-indicator"><span class="live-dot"></span> Live Surveillance Active</span>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div class="dash-metrics-grid" id="dashMetricsGrid">
+          <div class="dash-stat-card">
+            <span class="stat-label">Total Monitored Accounts</span>
+            <span class="stat-val" id="statMonitored">1,432</span>
+            <span class="stat-sub text-green">&uarr; 100% baseline coverage</span>
+          </div>
+          <div class="dash-stat-card">
+            <span class="stat-label">Active High Risk Alerts</span>
+            <span class="stat-val text-red" id="statHighAlerts">3</span>
+            <span class="stat-sub">Immediate investigator review</span>
+          </div>
+          <div class="dash-stat-card">
+            <span class="stat-label">Reviewed Volume (Last 90d)</span>
+            <span class="stat-val" id="statVolume">&#8377;18.42 Cr</span>
+            <span class="stat-sub">Commercial &amp; Retail accounts</span>
+          </div>
+          <div class="dash-stat-card">
+            <span class="stat-label">Surveillance Accuracy</span>
+            <span class="stat-val text-green" id="statAccuracy">99.6%</span>
+            <span class="stat-sub">Zero false positive lockdown</span>
+          </div>
+        </div>
+
+        <!-- Priority Alert Queue -->
+        <div class="panel dash-section">
+          <div class="panel-header">
+            <h3>Active Risk Queue &bull; Immediate Investigation Needed</h3>
+            <span class="badge-pill badge-risk-high" id="activeAlertQueueCount">3 Alerts Pending</span>
+          </div>
+          <div class="table-container">
+            <table class="tx-table" id="dashAlertsTable">
               <thead>
                 <tr>
-                  <th>ID</th><th>Date</th><th>Payee</th><th>Amount</th><th>Channel</th><th>Category</th><th>Region</th>
+                  <th>Priority</th>
+                  <th>Customer</th>
+                  <th>Account No</th>
+                  <th>Risk Level</th>
+                  <th>Triggered Risk Rules</th>
+                  <th>Flagged Tx</th>
+                  <th>Last Analysed</th>
+                  <th>Action</th>
                 </tr>
               </thead>
-              <tbody id="txBody"></tbody>
+              <tbody id="dashAlertsTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
             </table>
           </div>
         </div>
 
-        <div class="report-panel" id="reportPanel">
-          <h3>Investigation Report</h3>
-          <section id="firstFinding" class="report-section"></section>
-          <section id="summary" class="report-section"></section>
-          <section id="claims" class="report-section"></section>
-          <section id="fallbackNotice" class="report-section"></section>
+        <!-- Risk Distribution Breakdown -->
+        <div class="dash-bottom-grid">
+          <div class="panel dash-rule-breakdown">
+            <div class="panel-header">
+              <h3>Risk Signals Distribution</h3>
+            </div>
+            <div class="breakdown-list" id="ruleDistributionList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+          <div class="panel dash-recent-actions">
+            <div class="panel-header">
+              <h3>Recent Investigator Actions</h3>
+            </div>
+            <div class="audit-log-list">
+              <div class="audit-item">
+                <span class="audit-dot"></span>
+                <div class="audit-info">
+                  <strong>Dharshini</strong> reviewed case <strong>CUST001 (Priya Sharma)</strong>
+                  <div class="audit-time">Today, 14:35 &bull; Added case note</div>
+                </div>
+              </div>
+              <div class="audit-item">
+                <span class="audit-dot"></span>
+                <div class="audit-info">
+                  <strong>Dharshini</strong> verified <strong>CUST002 (Rahul Mehta)</strong>
+                  <div class="audit-time">Today, 12:20 &bull; Baseline confirmed clean</div>
+                </div>
+              </div>
+              <div class="audit-item">
+                <span class="audit-dot"></span>
+                <div class="audit-info">
+                  <strong>Dharshini</strong> initiated review for <strong>CUST003 (Ananya Iyer)</strong>
+                  <div class="audit-time">Today, 11:50 &bull; New payee verification requested</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </section>
-    </main>
+      </main>
+
+      <!-- ====================================================================
+           VIEW 3: Risk Alerts Queue
+           ==================================================================== -->
+      <main class="tab-view panel-view hidden" id="view-alerts">
+        <div class="view-header">
+          <div>
+            <h2>Surveillance Risk Alerts</h2>
+            <p class="view-subtitle">Triaged behavioral anomalies across account portfolios awaiting investigator action.</p>
+          </div>
+          <div class="alerts-filter-bar">
+            <button class="filter-chip active" data-filter="ALL">All Alerts (<span id="alertCountAll">5</span>)</button>
+            <button class="filter-chip" data-filter="HIGH">High Risk (<span id="alertCountHigh">3</span>)</button>
+            <button class="filter-chip" data-filter="MEDIUM">Medium Risk (<span id="alertCountMed">2</span>)</button>
+          </div>
+        </div>
+
+        <div class="alerts-cards-grid" id="alertsCardsGrid">
+          <!-- Populated dynamically -->
+        </div>
+      </main>
+
+      <!-- ====================================================================
+           VIEW 4: Reports Archive
+           ==================================================================== -->
+      <main class="tab-view panel-view hidden" id="view-reports">
+        <div class="view-header">
+          <div>
+            <h2>Investigation Dossiers Archive</h2>
+            <p class="view-subtitle">Official compliance dossiers and audit records available for instant Word (.doc) and PDF export.</p>
+          </div>
+          <div class="report-actions-top">
+            <button class="btn btn-primary" id="exportAllReportsBtn">Export All Visible Dossiers</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="table-container">
+            <table class="tx-table" id="reportsArchiveTable">
+              <thead>
+                <tr>
+                  <th>Dossier ID</th>
+                  <th>Customer Name</th>
+                  <th>Account No</th>
+                  <th>Evaluated Risk</th>
+                  <th>Verdict</th>
+                  <th>Generated Date</th>
+                  <th>Assigned Officer</th>
+                  <th>Export Actions</th>
+                </tr>
+              </thead>
+              <tbody id="reportsArchiveBody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+      <!-- ====================================================================
+           VIEW 5: Settings & Rule Configuration
+           ==================================================================== -->
+      <main class="tab-view panel-view hidden" id="view-settings">
+        <div class="view-header">
+          <div>
+            <h2>Investigation Engine Configuration</h2>
+            <p class="view-subtitle">Customize detection thresholds, sensitivity windows, and officer profile.</p>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <!-- Detection Thresholds Panel -->
+          <div class="panel settings-card">
+            <div class="panel-header">
+              <h3>Rule Sensitivity Thresholds</h3>
+            </div>
+            <div class="settings-body">
+              <div class="form-group">
+                <label class="form-label">Large Transfer Multiplier (Trailing 90-Day Baseline)</label>
+                <div class="range-row">
+                  <input type="range" min="1.5" max="5.0" step="0.1" value="2.5" id="sliderMultiplier" class="slider" />
+                  <span class="range-val" id="valMultiplier">2.5&times;</span>
+                </div>
+                <span class="form-hint">Transfers exceeding this multiple of trailing 90-day median will trigger Rule 1.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">New Payee Burst Window</label>
+                <select class="form-select" id="selectBurstWindow">
+                  <option value="24">24 Hours</option>
+                  <option value="48" selected>48 Hours (Standard)</option>
+                  <option value="72">72 Hours</option>
+                </select>
+                <span class="form-hint">Time window to evaluate 3 or more rapid payments to an unseen payee.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Established Active Hours (Standard Indian Business Window)</label>
+                <div class="time-range-row">
+                  <input type="text" class="form-input" value="09:00 AM" readonly />
+                  <span>to</span>
+                  <input type="text" class="form-input" value="07:00 PM" readonly />
+                </div>
+                <span class="form-hint">Transactions outside this window evaluate under Rule 3 (Odd-Hours Activity).</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Officer Profile & System Health Panel -->
+          <div class="panel settings-card">
+            <div class="panel-header">
+              <h3>Officer Surveillance Profile</h3>
+            </div>
+            <div class="settings-body">
+              <div class="form-group">
+                <label class="form-label">Designated Fraud Analyst</label>
+                <input type="text" class="form-input" value="Dharshini" readonly />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Badge / Officer ID</label>
+                <input type="text" class="form-input" value="OFFICER-4029" readonly />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Surveillance Model</label>
+                <input type="text" class="form-input" value="Gemini 3.6 Flash &bull; Bank Audit Grade" readonly />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Default Dossier Export Format</label>
+                <select class="form-select" id="selectDefaultFormat">
+                  <option value="word" selected>Microsoft Word (.doc)</option>
+                  <option value="pdf">Adobe PDF (.pdf)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
   </div>
 
+  <!-- Full Investigation Report Modal (Dossier) -->
+  <div class="modal-backdrop hidden" id="reportModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-brand">
+          <svg class="brand-shield" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <h3>Official Fraud Desk Investigation Dossier</h3>
+        </div>
+        <button class="modal-close-btn" id="closeModalBtn" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body" id="modalBodyContent">
+        <!-- Dossier content dynamically rendered -->
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="closeModalFooterBtn">Close</button>
+        <button class="btn btn-word" id="modalDownloadWordBtn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          Download Word (.doc)
+        </button>
+        <button class="btn btn-primary" id="printReportBtn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Print / Save as PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Options Modal -->
+  <div class="modal-backdrop hidden" id="exportModal">
+    <div class="modal-card modal-small">
+      <div class="modal-header">
+        <h3>Export Investigation Dossier</h3>
+        <button class="modal-close-btn" id="closeExportModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 14px; font-size: 13px; color: var(--text-muted);">
+          Select your preferred document format to download the complete AI investigation summary, baseline metrics, rule evaluation, and transaction history:
+        </p>
+        <div class="export-options-grid">
+          <button class="export-choice-card" id="choiceExportWord">
+            <div class="choice-icon icon-word">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </div>
+            <div class="choice-text">
+              <strong>Microsoft Word (.doc)</strong>
+              <span>Formatted document with full AI summary, tables &amp; headers</span>
+            </div>
+          </button>
+
+          <button class="export-choice-card" id="choiceExportPdf">
+            <div class="choice-icon icon-pdf">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path>
+                <line x1="9" y1="9" x2="15" y2="9"></line>
+                <line x1="9" y1="13" x2="15" y2="13"></line>
+                <line x1="9" y1="17" x2="11" y2="17"></line>
+              </svg>
+            </div>
+            <div class="choice-text">
+              <strong>Adobe PDF (.pdf)</strong>
+              <span>Clean print-ready official compliance dossier</span>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelExportBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Note Modal -->
+  <div class="modal-backdrop hidden" id="noteModal">
+    <div class="modal-card modal-small">
+      <div class="modal-header">
+        <h3>Add Case Investigation Note</h3>
+        <button class="modal-close-btn" id="closeNoteModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label for="investigatorNoteInput" class="form-label">Investigator Case Notes:</label>
+        <textarea id="investigatorNoteInput" class="form-textarea" rows="5" placeholder="Enter findings, verification calls, customer statements, or audit remarks..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelNoteBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveNoteBtn">Save Note</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast hidden" id="appToast"></div>
+
   <script src="/app.js"></script>
+
+  <div id="notificationToast" class="notification-toast">
+    <div class="notification-icon">🔔</div>
+    <div class="notification-content">
+      <div class="notification-title" id="notifTitle">New Alert Detected</div>
+      <div class="notification-msg" id="notifMsg">Risk detected on customer profile.</div>
+    </div>
+    <button class="notification-close" onclick="document.getElementById('notificationToast').classList.remove('show')">&times;</button>
+  </div>
+
+
+  <!-- Transactions Modal -->
+  <div id="txModal" class="modal-overlay">
+    <div class="modal-content tx-modal-content">
+      <div class="modal-header">
+        <h3>All Transactions</h3>
+        <button class="modal-close" onclick="closeTxModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="tx-modal-filters">
+          <button class="btn btn-sm active" id="modalFilterAll" onclick="filterModalTx('all')">All</button>
+          <button class="btn btn-sm btn-outline" id="modalFilterFlagged" onclick="filterModalTx('flagged')">Flagged</button>
+        </div>
+        <div class="table-container tx-modal-table">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Txn ID</th>
+                <th>Date &amp; Time</th>
+                <th>Description</th>
+                <th>Payee</th>
+                <th>Amount (₹)</th>
+                <th>Channel</th>
+                <th>Risk Status</th>
+              </tr>
+            </thead>
+            <tbody id="modalTxTableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
