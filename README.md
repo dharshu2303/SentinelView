@@ -1,3 +1,5 @@
+TRACK_ID=PS06
+
 # SentinelView - Transaction Risk Investigation Assistant 🛡️
 
 **SentinelView** is an intelligent, AI-powered investigation assistant built for a bank's fraud desk. It analyzes customer transaction histories (covering several months of activity) against deterministic risk rules, detects behavioral anomalies, and generates structured compliance investigation dossiers using Google Gemini AI.
