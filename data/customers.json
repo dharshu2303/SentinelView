@@ -1,0 +1,58 @@
+[
+  {
+    "id": "C001",
+    "name": "Avery Coleman",
+    "profile": "clean_routine_1",
+    "transaction_count": 70,
+    "date_start": "2026-01-01T14:16:59",
+    "date_end": "2026-05-31T16:14:37"
+  },
+  {
+    "id": "C002",
+    "name": "Mina Farouk",
+    "profile": "clean_routine_2",
+    "transaction_count": 70,
+    "date_start": "2026-01-02T20:55:49",
+    "date_end": "2026-05-29T18:31:55"
+  },
+  {
+    "id": "C003",
+    "name": "Jonas Patel",
+    "profile": "large_transfer_only",
+    "transaction_count": 71,
+    "date_start": "2026-01-01T12:54:09",
+    "date_end": "2026-05-31T16:35:21"
+  },
+  {
+    "id": "C004",
+    "name": "Elena Rossi",
+    "profile": "new_payee_burst_only",
+    "transaction_count": 73,
+    "date_start": "2026-01-07T13:35:36",
+    "date_end": "2026-05-28T19:20:12"
+  },
+  {
+    "id": "C005",
+    "name": "Noah Whitaker",
+    "profile": "odd_hours_only",
+    "transaction_count": 74,
+    "date_start": "2026-01-01T19:13:37",
+    "date_end": "2026-05-26T17:06:59"
+  },
+  {
+    "id": "C006",
+    "name": "Priya Sen",
+    "profile": "pattern_break_only",
+    "transaction_count": 71,
+    "date_start": "2026-01-02T14:08:53",
+    "date_end": "2026-05-29T19:36:14"
+  },
+  {
+    "id": "C007",
+    "name": "Lucas Meyer",
+    "profile": "multi_rule",
+    "transaction_count": 74,
+    "date_start": "2026-01-01T11:30:04",
+    "date_end": "2026-05-27T18:46:07"
+  }
+]
