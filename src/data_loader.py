@@ -25,14 +25,9 @@ def load_customer_data() -> Dict[str, Dict]:
     out: Dict[str, Dict] = {}
     for c in customers:
         txs = grouped.get(c["id"], [])
-        out[c["id"]] = {
-            "id": c["id"],
-            "name": c["name"],
-            "profile": c["profile"],
-            "transaction_count": len(txs),
-            "date_start": c.get("date_start"),
-            "date_end": c.get("date_end"),
-            "transactions": txs,
-        }
+        record = dict(c)
+        record["transaction_count"] = len(txs)
+        record["transactions"] = txs
+        out[c["id"]] = record
 
     return out
