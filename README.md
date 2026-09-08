@@ -14,7 +14,6 @@ TRACK_ID=PS06
 
 ## ✨ Key Features & Capabilities
 
-* **12 Indian Customer Profiles:** Synthetic portfolios featuring real-world Indian names (*Priya Sharma, Rahul Mehta, Ananya Iyer, Vikram Patel, etc.*) and over 740+ transaction history records.
 * **Deterministic Risk Engine:** Scores customer activity on the fly against 4 core banking surveillance rules:
   1. **Unusually Large Transfers (R1):** Detects single transfers breaking 90-day customer baseline medians(2.5x times).
   2. **New Payee Bursts (R2):** Identifies rapid-fire consecutive payments to newly added accounts within short time windows.
