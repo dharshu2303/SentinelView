@@ -30,6 +30,17 @@ const customerListContainer = document.getElementById('customerList');
 const customerTotalCountEl = document.getElementById('customerTotalCount');
 const riskAlertsBadge = document.getElementById('riskAlertsBadge');
 
+// Customer Panel Toggle Elements
+const colCustomersEl = document.getElementById('colCustomers');
+const viewInvestigateEl = document.getElementById('view-investigate');
+const toggleCustomerPanelBtn = document.getElementById('toggleCustomerPanelBtn');
+const collapsedCustomerStrip = document.getElementById('collapsedCustomerStrip');
+const mobileCollapsedBanner = document.getElementById('mobileCollapsedBanner');
+const collapsedCurrentAvatarEl = document.getElementById('collapsedCurrentAvatar');
+const mCurrentAvatarEl = document.getElementById('mCurrentAvatar');
+const mCurrentNameEl = document.getElementById('mCurrentName');
+const mCurrentIdEl = document.getElementById('mCurrentId');
+
 // Navigation Tabs
 const navLinks = document.querySelectorAll('.nav-link');
 const tabViews = {
@@ -293,6 +304,9 @@ function renderCustomerList(filterText = '') {
       if (cid !== state.currentCustomerId) {
         selectCustomer(cid);
       }
+      if (window.innerWidth <= 768) {
+        setCustomerPanelCollapsed(true);
+      }
     });
   });
 }
@@ -300,6 +314,55 @@ function renderCustomerList(filterText = '') {
 customerSearchInput.addEventListener('input', (e) => {
   renderCustomerList(e.target.value);
 });
+
+/* ==========================================================================
+   Customer Panel Collapse / Expand Controls
+   ========================================================================== */
+
+function setCustomerPanelCollapsed(collapsed) {
+  state.customersCollapsed = collapsed;
+  if (!colCustomersEl || !viewInvestigateEl) return;
+
+  if (collapsed) {
+    colCustomersEl.classList.add('collapsed');
+    viewInvestigateEl.classList.add('customers-collapsed');
+    if (toggleCustomerPanelBtn) {
+      toggleCustomerPanelBtn.setAttribute('title', 'Expand Customer List');
+      toggleCustomerPanelBtn.setAttribute('aria-label', 'Expand customer list');
+    }
+  } else {
+    colCustomersEl.classList.remove('collapsed');
+    viewInvestigateEl.classList.remove('customers-collapsed');
+    if (toggleCustomerPanelBtn) {
+      toggleCustomerPanelBtn.setAttribute('title', 'Minimize Customer List');
+      toggleCustomerPanelBtn.setAttribute('aria-label', 'Minimize customer list');
+    }
+  }
+}
+
+function toggleCustomerPanel() {
+  const isCollapsed = colCustomersEl ? colCustomersEl.classList.contains('collapsed') : false;
+  setCustomerPanelCollapsed(!isCollapsed);
+}
+
+if (toggleCustomerPanelBtn) {
+  toggleCustomerPanelBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleCustomerPanel();
+  });
+}
+
+if (collapsedCustomerStrip) {
+  collapsedCustomerStrip.addEventListener('click', () => {
+    setCustomerPanelCollapsed(false);
+  });
+}
+
+if (mobileCollapsedBanner) {
+  mobileCollapsedBanner.addEventListener('click', () => {
+    setCustomerPanelCollapsed(false);
+  });
+}
 
 /* ==========================================================================
    Select Customer (Instant 0ms with Cache!)
@@ -316,7 +379,8 @@ async function selectCustomer(customerId) {
 
   // Update header immediately from known customer metadata
   if (state.currentCustomer) {
-    customerAvatarEl.textContent = getInitials(state.currentCustomer.name);
+    const inits = getInitials(state.currentCustomer.name);
+    customerAvatarEl.textContent = inits;
     customerNameEl.textContent = state.currentCustomer.name;
     customerIdEl.textContent = state.currentCustomer.id;
     customerSinceEl.textContent = state.currentCustomer.customer_since || '2 years';
@@ -325,6 +389,11 @@ async function selectCustomer(customerId) {
     customerAccountTypeEl.textContent = state.currentCustomer.account_type || 'Savings Platinum';
     customerBranchEl.textContent = state.currentCustomer.branch || 'Fort Branch, Mumbai';
     customerPhoneEl.textContent = state.currentCustomer.phone || '+91 98201 44821';
+
+    if (collapsedCurrentAvatarEl) collapsedCurrentAvatarEl.textContent = inits;
+    if (mCurrentAvatarEl) mCurrentAvatarEl.textContent = inits;
+    if (mCurrentNameEl) mCurrentNameEl.textContent = state.currentCustomer.name;
+    if (mCurrentIdEl) mCurrentIdEl.textContent = state.currentCustomer.id;
   }
 
   // Check in-browser cache first for 0ms instantaneous update!

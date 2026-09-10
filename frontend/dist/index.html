@@ -166,20 +166,48 @@
            ==================================================================== -->
       <main class="main-workbench tab-view active" id="view-investigate">
         <!-- Column 1: Select Customer -->
-        <section class="col-customers panel">
+        <section class="col-customers panel" id="colCustomers">
           <div class="panel-header">
-            <h2>Select Customer</h2>
-            <span class="customer-total-badge" id="customerTotalCount">12</span>
+            <div class="panel-header-title">
+              <h2>Select Customer</h2>
+              <span class="customer-total-badge" id="customerTotalCount">12</span>
+            </div>
+            <button class="collapse-toggle-btn" id="toggleCustomerPanelBtn" title="Minimize / Expand Customer List" aria-label="Toggle customer list">
+              <svg class="collapse-icon-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
           </div>
-          <div class="search-box">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" id="customerSearch" placeholder="Search by customer ID, name or mobile..." />
+
+          <!-- Vertical Strip shown when collapsed on desktop -->
+          <div class="collapsed-customer-strip" id="collapsedCustomerStrip" title="Click to Expand Customer List">
+            <div class="collapsed-strip-icon" id="collapsedCurrentAvatar">PS</div>
+            <span class="collapsed-strip-label">Customers</span>
           </div>
-          <div class="customer-list-scroll" id="customerList">
-            <!-- Populated dynamically -->
+
+          <!-- Mobile Compact Banner shown when collapsed on mobile -->
+          <div class="mobile-collapsed-banner" id="mobileCollapsedBanner" title="Tap to switch customer">
+            <div class="m-banner-left">
+              <div class="m-banner-avatar" id="mCurrentAvatar">PS</div>
+              <div class="m-banner-info">
+                <strong id="mCurrentName">Priya Sharma</strong>
+                <span id="mCurrentId">CUST001</span>
+              </div>
+            </div>
+            <span class="m-banner-action">Switch Customer &darr;</span>
+          </div>
+
+          <div class="col-customers-body" id="colCustomersBody">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="customerSearch" placeholder="Search by customer ID, name or mobile..." />
+            </div>
+            <div class="customer-list-scroll" id="customerList">
+              <!-- Populated dynamically -->
+            </div>
           </div>
         </section>
 
