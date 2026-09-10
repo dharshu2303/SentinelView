@@ -1,3 +1,5 @@
+TRACK_ID=PS06
+
 # SentinelView - Transaction Risk Investigation Assistant 🛡️
 
 **SentinelView** is an intelligent, AI-powered investigation assistant built for a bank's fraud desk. It analyzes customer transaction histories (covering several months of activity) against deterministic risk rules, detects behavioral anomalies, and generates structured compliance investigation dossiers using Google Gemini AI.
@@ -12,9 +14,8 @@
 
 ## ✨ Key Features & Capabilities
 
-* **12 Indian Customer Profiles:** Synthetic portfolios featuring real-world Indian names (*Priya Sharma, Rahul Mehta, Ananya Iyer, Vikram Patel, etc.*) and over 740+ transaction history records.
 * **Deterministic Risk Engine:** Scores customer activity on the fly against 4 core banking surveillance rules:
-  1. **Unusually Large Transfers (R1):** Detects single transfers breaking 90-day customer baseline medians ($4.1\times+$).
+  1. **Unusually Large Transfers (R1):** Detects single transfers breaking 90-day customer baseline medians(2.5x times).
   2. **New Payee Bursts (R2):** Identifies rapid-fire consecutive payments to newly added accounts within short time windows.
   3. **Odd-Hours Activity (R3):** Flags transfers occurring outside the customer's established active hours (e.g. 02:13 AM).
   4. **Pattern Break Behavior (R4):** Catches anomalous channels, rapid velocity shifts, or regional breaks.
