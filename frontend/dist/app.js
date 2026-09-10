@@ -1831,3 +1831,46 @@ if (uploadCustForm) {
   });
 }
 
+/* ==========================================================================
+   Mobile Navigation Drawer Toggle
+   ========================================================================== */
+
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const sidebarNav = document.querySelector('.sidebar-nav');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+function toggleMobileSidebar(open) {
+  if (!sidebarNav || !sidebarBackdrop) return;
+  const shouldOpen = open !== undefined ? open : !sidebarNav.classList.contains('open');
+  if (shouldOpen) {
+    sidebarNav.classList.add('open');
+    sidebarBackdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  } else {
+    sidebarNav.classList.remove('open');
+    sidebarBackdrop.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+if (mobileMenuBtn) {
+  mobileMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMobileSidebar();
+  });
+}
+
+if (sidebarBackdrop) {
+  sidebarBackdrop.addEventListener('click', () => toggleMobileSidebar(false));
+}
+
+// Close drawer automatically when clicking any nav link on mobile
+navLinks.forEach((link) => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      toggleMobileSidebar(false);
+    }
+  });
+});
+
+

@@ -2061,6 +2061,362 @@ body {
 
 
 /* ==========================================================================
+   Mobile Navigation & Drawer Elements
+   ========================================================================== */
+
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-main);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms ease;
+  margin-right: 4px;
+}
+.mobile-menu-btn:hover {
+  background: var(--bg-card-hover);
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  z-index: 85;
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+.sidebar-backdrop.open {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints & Mobile Adaptations
+   ========================================================================== */
+
+/* 1. Large Tablets & Small Laptops (<= 1200px) */
+@media screen and (max-width: 1200px) {
+  .main-workbench {
+    grid-template-columns: 240px minmax(380px, 1fr) 310px;
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  .behavior-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dash-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 2. Medium Tablets (<= 1024px) */
+@media screen and (max-width: 1024px) {
+  .main-workbench {
+    grid-template-columns: 240px 1fr;
+    height: auto;
+  }
+
+  .col-right {
+    grid-column: 1 / -1;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .rule-cards-container {
+    max-height: none;
+  }
+
+  .dash-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 3. Small Tablets & Mobile Devices (<= 768px) */
+@media screen and (max-width: 768px) {
+  .mobile-menu-btn {
+    display: inline-flex;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .brand-separator {
+    display: none;
+  }
+
+  .top-header {
+    padding: 0 14px;
+    height: 56px;
+  }
+
+  .app-layout {
+    display: block;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* Mobile Drawer Sidebar */
+  .sidebar-nav {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: 270px;
+    max-width: 80vw;
+    z-index: 100;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-main);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+  }
+
+  .sidebar-nav.open {
+    transform: translateX(0);
+  }
+
+  .tab-views-container {
+    width: 100%;
+    overflow-y: visible;
+    height: auto;
+  }
+
+  .panel-view {
+    padding: 12px 14px;
+    max-height: none;
+    overflow-y: visible;
+    gap: 14px;
+  }
+
+  /* Workbench Mobile 1-Column Stacking */
+  .main-workbench {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px 12px;
+    height: auto;
+    overflow: visible;
+  }
+
+  .col-customers {
+    max-height: none;
+    overflow: visible;
+    width: 100%;
+  }
+
+  .customer-list-scroll {
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .col-center,
+  .col-right {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+    width: 100%;
+  }
+
+  /* Key Reasons Grid */
+  .key-reasons-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Behavior Grid */
+  .behavior-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Quick Actions Grid */
+  .qa-buttons-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Dashboard Metrics Grid */
+  .dash-metrics-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .dash-stat-card {
+    padding: 12px;
+  }
+
+  .stat-val {
+    font-size: 18px;
+  }
+
+  /* Alerts Cards Grid */
+  .alerts-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tables horizontal scrolling */
+  .table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tx-table,
+  .data-table {
+    min-width: 580px;
+  }
+
+  /* Modals on Mobile */
+  .modal-backdrop {
+    padding: 10px;
+  }
+
+  .modal-card {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 12px;
+  }
+
+  .modal-body {
+    padding: 14px 16px;
+  }
+
+  .modal-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: stretch;
+  }
+
+  .modal-footer .btn,
+  .modal-footer .btn-word {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Notification Toast */
+  .notification-toast {
+    right: 12px;
+    left: 12px;
+    bottom: 14px;
+    max-width: calc(100% - 24px);
+  }
+}
+
+/* 4. Extra Small Phones (<= 480px) */
+@media screen and (max-width: 480px) {
+  .top-header {
+    padding: 0 10px;
+  }
+
+  .header-right {
+    gap: 8px;
+  }
+
+  .theme-toggle-btn {
+    padding: 5px 8px;
+  }
+
+  .theme-text {
+    display: none;
+  }
+
+  .user-meta {
+    display: none;
+  }
+
+  .user-profile {
+    padding-left: 4px;
+    border-left: none;
+  }
+
+  .customer-header-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .ch-left {
+    width: 100%;
+  }
+
+  .ch-meta-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .ch-extra-meta {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .ch-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .attention-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .banner-right {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .qa-buttons-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .alerts-filter-bar {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .filter-chip {
+    width: 100%;
+    text-align: center;
+  }
+
+  .time-range-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .view-header-right {
+    width: 100%;
+  }
+}
+
+
+/* ==========================================================================
    Complete Official Print & PDF Stylesheet
    ========================================================================== */
 @media print {
