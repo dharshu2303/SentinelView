@@ -1590,6 +1590,8 @@ async function boot() {
 boot();
 
 
+let notificationTimer = null;
+
 window.showNotification = function(title, msg) {
     const toast = document.getElementById('notificationToast');
     const t = document.getElementById('notifTitle');
@@ -1598,17 +1600,40 @@ window.showNotification = function(title, msg) {
         t.innerText = title;
         m.innerText = msg;
         toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 4000);
+        if (notificationTimer) clearTimeout(notificationTimer);
+        notificationTimer = setTimeout(() => toast.classList.remove('show'), 5000);
     }
 };
 
-// Hook into header bell icon to show dummy alert
+window.toggleNotification = function(title, msg) {
+    const toast = document.getElementById('notificationToast');
+    if (toast && toast.classList.contains('show')) {
+        toast.classList.remove('show');
+        if (notificationTimer) clearTimeout(notificationTimer);
+    } else {
+        showNotification(title || 'New System Alert', msg || 'Unusual pattern detected across 3 accounts.');
+    }
+};
+
+// Hook into header bell icon to toggle alert
 const headerBell = document.getElementById('headerNotificationBtn');
 if(headerBell) {
-    headerBell.addEventListener('click', () => {
-        showNotification('New System Alert', 'Unusual pattern detected across 3 accounts.');
+    headerBell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleNotification('New System Alert', 'Unusual pattern detected across 3 accounts.');
     });
 }
+
+// Dismiss notification popover when clicking anywhere outside
+document.addEventListener('click', (e) => {
+    const toast = document.getElementById('notificationToast');
+    if (toast && toast.classList.contains('show')) {
+        if (!toast.contains(e.target) && (!headerBell || !headerBell.contains(e.target))) {
+            toast.classList.remove('show');
+            if (notificationTimer) clearTimeout(notificationTimer);
+        }
+    }
+});
 
 window.openTxModal = function() {
     const modal = document.getElementById('txModal');
