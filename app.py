@@ -9,7 +9,7 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 import pandas as pd
 
-from src.data_loader import DATA_DIR, load_customer_data
+from src.data_loader import DATA_DIR, get_runtime_data_paths, load_customer_data
 from src.gemini_narrator import GeminiNarrator, deterministic_fallback
 from src.rules_engine import RulesEngine
 
@@ -467,7 +467,7 @@ def upload_transactions():
     if not content.strip():
         return jsonify({"error": "Uploaded CSV file is empty."}), 400
 
-    tx_path = DATA_DIR / "transactions.csv"
+    _, tx_path = get_runtime_data_paths()
     if not tx_path.exists():
         return jsonify({"error": f"Base transactions file not found at {tx_path}"}), 500
 
@@ -595,7 +595,7 @@ def upload_customers():
     Validates required fields ('id', 'name'), deduplicates by customer ID,
     persists updates to data/customers.json, and refreshes the in-memory cache.
     """
-    customers_path = DATA_DIR / "customers.json"
+    customers_path, _ = get_runtime_data_paths()
     existing_customers = []
     if customers_path.exists():
         try:
