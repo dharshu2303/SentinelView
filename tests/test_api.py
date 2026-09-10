@@ -1,8 +1,7 @@
 from copy import deepcopy
-
+import io
+import json
 import app as app_module
-
-
 def test_clean_customer_path():
     client = app_module.app.test_client()
     payload = client.post('/api/customers/CUST002/investigate').get_json()
@@ -112,4 +111,131 @@ def test_dashboard_alerts_reports_endpoints():
 
     reports = client.get('/api/reports').get_json()
     assert len(reports) == 12
+
+
+def test_upload_transactions_success_and_cache_refresh():
+    tx_path = app_module.DATA_DIR / "transactions.csv"
+    orig_tx_bytes = tx_path.read_bytes()
+    try:
+        client = app_module.app.test_client()
+        csv_data = (
+            "transaction_id,customer_id,date,description,payee,amount,channel,category,region\n"
+            "CUST002-NEW01,CUST002,2025-08-25T14:00:00,Office Supplies,Staples,1500.0,UPI,services,Mumbai_Metro\n"
+            "CUST002-NEW02,CUST002,2025-08-25T15:00:00,Software,JetBrains,8500.0,Net Banking,services,Mumbai_Metro\n"
+        )
+        resp = client.post(
+            "/admin/upload-transactions",
+            data={"file": (io.BytesIO(csv_data.encode("utf-8")), "new_tx.csv")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 200
+        payload = resp.get_json()
+        assert payload["status"] == "success"
+        assert payload["rows_added"] == 2
+        assert len(payload["rows_rejected"]) == 0
+
+        # Verify transaction was ingested and in-memory cache was refreshed
+        cust_tx_resp = client.get("/api/customers/CUST002/transactions").get_json()
+        tx_ids = [t["transaction_id"] for t in cust_tx_resp["transactions"]]
+        assert "CUST002-NEW01" in tx_ids
+        assert "CUST002-NEW02" in tx_ids
+    finally:
+        tx_path.write_bytes(orig_tx_bytes)
+        app_module.refresh_in_memory_data()
+
+
+def test_upload_transactions_missing_columns():
+    client = app_module.app.test_client()
+    bad_csv = "customer_id,date,amount\nCUST001,2025-08-25T10:00:00,5000\n"
+    resp = client.post(
+        "/admin/upload-transactions",
+        data={"file": (io.BytesIO(bad_csv.encode("utf-8")), "bad_schema.csv")},
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 400
+    payload = resp.get_json()
+    assert "error" in payload
+    assert "Column mismatch" in payload["error"]
+
+
+def test_upload_transactions_deduplication_and_missing_values():
+    tx_path = app_module.DATA_DIR / "transactions.csv"
+    orig_tx_bytes = tx_path.read_bytes()
+    try:
+        client = app_module.app.test_client()
+        # Row 1: duplicate of existing CUST001-T001
+        # Row 2: valid new transaction
+        # Row 3: duplicate within same batch (same ID as Row 2)
+        # Row 4: missing required date
+        # Row 5: invalid amount
+        csv_data = (
+            "transaction_id,customer_id,date,description,payee,amount,channel,category,region\n"
+            "CUST001-T001,CUST001,2025-08-25T10:00:00,Existing Tx,Payee,5000,UPI,services,Mumbai_Metro\n"
+            "CUST001-NEW99,CUST001,2025-08-25T11:00:00,New Valid Tx,Payee,6000,UPI,services,Mumbai_Metro\n"
+            "CUST001-NEW99,CUST001,2025-08-25T12:00:00,Batch Dupe Tx,Payee,7000,UPI,services,Mumbai_Metro\n"
+            "CUST001-NEW100,CUST001,,Missing Date Tx,Payee,8000,UPI,services,Mumbai_Metro\n"
+            "CUST001-NEW101,CUST001,2025-08-25T13:00:00,Bad Amount,Payee,NOT_A_NUMBER,UPI,services,Mumbai_Metro\n"
+        )
+        resp = client.post(
+            "/admin/upload-transactions",
+            data={"file": (io.BytesIO(csv_data.encode("utf-8")), "mixed.csv")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 200
+        payload = resp.get_json()
+        assert payload["status"] == "success"
+        assert payload["rows_added"] == 1
+        assert len(payload["rows_rejected"]) == 4
+        reasons = [r["reason"] for r in payload["rows_rejected"]]
+        assert any("already exists" in r for r in reasons)
+        assert any("Missing or empty" in r for r in reasons)
+        assert any("Invalid numeric amount" in r for r in reasons)
+    finally:
+        tx_path.write_bytes(orig_tx_bytes)
+        app_module.refresh_in_memory_data()
+
+
+def test_upload_customers_json_and_csv():
+    cust_path = app_module.DATA_DIR / "customers.json"
+    orig_cust_bytes = cust_path.read_bytes()
+    try:
+        client = app_module.app.test_client()
+
+        # 1. JSON upload with new customer + duplicate of existing CUST001
+        json_payload = [
+            {"id": "CUST001", "name": "Priya Sharma"},
+            {"id": "CUST099", "name": "Aditi Roy", "branch": "Salt Lake, Kolkata"},
+        ]
+        resp = client.post(
+            "/admin/upload-customers",
+            data={"file": (io.BytesIO(json.dumps(json_payload).encode("utf-8")), "customers.json")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 200
+        payload = resp.get_json()
+        assert payload["rows_added"] == 1
+        assert len(payload["rows_rejected"]) == 1
+        assert "already exists" in payload["rows_rejected"][0]["reason"]
+
+        # Verify new customer appears in API
+        customers_list = client.get("/api/customers").get_json()
+        cids = [c["id"] for c in customers_list]
+        assert "CUST099" in cids
+
+        # 2. CSV customer upload with missing name
+        csv_data = "id,name,branch\nCUST100,,Connaught Place\nCUST101,Rohan Sen,Park Street\n"
+        resp_csv = client.post(
+            "/admin/upload-customers",
+            data={"file": (io.BytesIO(csv_data.encode("utf-8")), "customers.csv")},
+            content_type="multipart/form-data",
+        )
+        assert resp_csv.status_code == 200
+        p_csv = resp_csv.get_json()
+        assert p_csv["rows_added"] == 1
+        assert len(p_csv["rows_rejected"]) == 1
+        assert "Missing required field" in p_csv["rows_rejected"][0]["reason"]
+    finally:
+        cust_path.write_bytes(orig_cust_bytes)
+        app_module.refresh_in_memory_data()
+
 

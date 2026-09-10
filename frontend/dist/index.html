@@ -124,6 +124,16 @@
             <span>Settings</span>
           </a>
         </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link" data-tab="upload">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Upload CSV</span>
+          </a>
+        </li>
       </ul>
 
       <!-- Footer Tagline -->
@@ -682,6 +692,117 @@
                   <option value="pdf">Adobe PDF (.pdf)</option>
                 </select>
               </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ====================================================================
+           VIEW 6: Admin Data Ingestion / CSV & Customer Upload
+           ==================================================================== -->
+      <main class="tab-view panel-view hidden" id="view-upload">
+        <div class="view-header">
+          <div>
+            <h2>Admin Data Ingestion &amp; Live Invalidation</h2>
+            <p class="view-subtitle">Upload updated transaction journals (CSV) or customer databases (CSV/JSON) into runtime memory.</p>
+          </div>
+          <div class="view-header-right">
+            <span class="live-indicator"><span class="live-dot" style="background-color: #3b82f6;"></span> Admin Workbench</span>
+          </div>
+        </div>
+
+        <!-- Auth warning banner for hackathon-grade UI -->
+        <div class="attention-banner" style="background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.3); margin-bottom: 24px;">
+          <div class="banner-left">
+            <div class="banner-icon-circle" style="background: rgba(59, 130, 246, 0.15); color: #2563eb;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </div>
+            <div class="banner-content">
+              <h3 style="color: var(--text-main, #1e293b); font-size: 14px;">ADMIN ENVIRONMENT NOTICE</h3>
+              <p style="color: var(--text-muted, #64748b); font-size: 13px;">Uploaded datasets are validated, deduplicated, appended to runtime files, and immediately hot-reloaded into the investigation cache. <em>Note: Authentication should be configured before real-world production deployment.</em></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <!-- Card 1: Transactions CSV Upload -->
+          <div class="panel settings-card">
+            <div class="panel-header">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <h3>Upload Transactions (CSV)</h3>
+              </div>
+              <span class="badge-pill" style="background: rgba(16, 185, 129, 0.1); color: #059669; font-size: 11px;">POST /admin/upload-transactions</span>
+            </div>
+            <div class="settings-body">
+              <p class="form-hint" style="margin-bottom: 12px;">
+                Upload a CSV journal. The schema is verified against the system's baseline (<code>transaction_id, customer_id, date, description, payee, amount, channel, category, region</code>). Duplicates by <code>transaction_id</code> are automatically skipped.
+              </p>
+              
+              <form id="uploadTxForm" enctype="multipart/form-data">
+                <div class="form-group">
+                  <label class="form-label" for="txFileInput">Select Transactions CSV File</label>
+                  <input type="file" id="txFileInput" name="file" accept=".csv" class="form-input" style="padding: 8px;" required />
+                </div>
+                <button type="submit" class="btn btn-primary" id="btnUploadTx" style="width: 100%; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  <span>Ingest Transactions</span>
+                </button>
+              </form>
+
+              <div id="txUploadResult" class="hidden" style="margin-top: 16px; border-radius: 8px; padding: 12px; font-size: 13px;"></div>
+            </div>
+          </div>
+
+          <!-- Card 2: Customers CSV/JSON Upload -->
+          <div class="panel settings-card">
+            <div class="panel-header">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <h3>Upload Customer Profiles (JSON / CSV)</h3>
+              </div>
+              <span class="badge-pill" style="background: rgba(99, 102, 241, 0.1); color: #4f46e5; font-size: 11px;">POST /admin/upload-customers</span>
+            </div>
+            <div class="settings-body">
+              <p class="form-hint" style="margin-bottom: 12px;">
+                Upload a JSON array or CSV list of customer accounts. Each record requires <code>id</code> and <code>name</code>. Existing customer IDs are safely deduplicated.
+              </p>
+              
+              <form id="uploadCustForm" enctype="multipart/form-data">
+                <div class="form-group">
+                  <label class="form-label" for="custFileInput">Select Customer JSON or CSV File</label>
+                  <input type="file" id="custFileInput" name="file" accept=".json,.csv" class="form-input" style="padding: 8px;" required />
+                </div>
+                <button type="submit" class="btn btn-primary" id="btnUploadCust" style="width: 100%; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  <span>Ingest Customer Profiles</span>
+                </button>
+              </form>
+
+              <div id="custUploadResult" class="hidden" style="margin-top: 16px; border-radius: 8px; padding: 12px; font-size: 13px;"></div>
             </div>
           </div>
         </div>

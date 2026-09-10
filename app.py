@@ -1,13 +1,15 @@
-from __future__ import annotations
-
+import csv
+import io
+import json
+import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-import logging
 
 from flask import Flask, jsonify, request, send_from_directory
+import pandas as pd
 
-from src.data_loader import load_customer_data
+from src.data_loader import DATA_DIR, load_customer_data
 from src.gemini_narrator import GeminiNarrator, deterministic_fallback
 from src.rules_engine import RulesEngine
 
@@ -221,12 +223,20 @@ def perform_investigation(customer_id: str, force_refresh: bool = False, simulat
     return result
 
 
+def refresh_in_memory_data() -> None:
+    """Reload customer and transaction data from disk and refresh in-memory cache."""
+    global customers_db, INVESTIGATION_CACHE
+    customers_db = load_customer_data()
+    INVESTIGATION_CACHE.clear()
+    for _cid in customers_db:
+        try:
+            perform_investigation(_cid, use_gemini=False)
+        except Exception as _e:
+            logger.warning("Error pre-warming cache for %s: %s", _cid, _e)
+
+
 # Pre-warm server-side investigation cache for all customers for 0ms response times
-for _cid in customers_db:
-    try:
-        perform_investigation(_cid, use_gemini=False)
-    except Exception as _e:
-        logger.warning("Error pre-warming cache for %s: %s", _cid, _e)
+refresh_in_memory_data()
 
 
 @app.get("/")
@@ -241,18 +251,30 @@ def root():
 def list_customers():
     payload = []
     for customer_id, customer in customers_db.items():
-        findings = rules_engine.analyze(customer_id, customer.get("transactions", []))
-        triggered = [f for f in findings if f["triggered"]]
-        
-        if not triggered:
+        txs = customer.get("transactions", [])
+        if not txs:
+            findings = []
+            triggered = []
             risk_level = "clean"
             risk_label = "No Risk"
-        elif len(triggered) >= 2 or any(f["severity"] == "High" for f in triggered):
-            risk_level = "high"
-            risk_label = "High Risk"
         else:
-            risk_level = "medium"
-            risk_label = "Medium Risk"
+            try:
+                findings = rules_engine.analyze(customer_id, txs)
+                triggered = [f for f in findings if f["triggered"]]
+                if not triggered:
+                    risk_level = "clean"
+                    risk_label = "No Risk"
+                elif len(triggered) >= 2 or any(f["severity"] == "High" for f in triggered):
+                    risk_level = "high"
+                    risk_label = "High Risk"
+                else:
+                    risk_level = "medium"
+                    risk_label = "Medium Risk"
+            except Exception:
+                findings = []
+                triggered = []
+                risk_level = "clean"
+                risk_label = "No Risk"
 
         payload.append(
             {
@@ -411,6 +433,320 @@ def get_reports_archive():
             "investigator": "Dharshini (Fraud Desk)",
         })
     return jsonify(reports)
+
+
+# --------------------------------------------------------------------------
+# Admin Runtime Data Upload Endpoints
+# NOTE: Hackathon-grade admin panel. Authentication and role-based access
+# control (RBAC) must be added before any real-world production deployment.
+# --------------------------------------------------------------------------
+
+@app.post("/admin/upload-transactions")
+def upload_transactions():
+    """
+    Upload and merge new transactions from a CSV file.
+    Validates schema against existing data/transactions.csv, checks required fields,
+    deduplicates against existing transaction IDs, and refreshes the in-memory cache.
+    """
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded. Please supply a CSV file in multipart form-data with key 'file'."}), 400
+
+    file = request.files["file"]
+    if not file or not file.filename:
+        return jsonify({"error": "No file selected for upload."}), 400
+
+    filename = file.filename or ""
+    if not filename.lower().endswith(".csv"):
+        return jsonify({"error": "Invalid file type. Only CSV files (.csv) are supported for transaction uploads."}), 400
+
+    try:
+        content = file.read().decode("utf-8-sig")
+    except Exception as exc:
+        return jsonify({"error": f"Unable to decode CSV file as UTF-8: {str(exc)}"}), 400
+
+    if not content.strip():
+        return jsonify({"error": "Uploaded CSV file is empty."}), 400
+
+    tx_path = DATA_DIR / "transactions.csv"
+    if not tx_path.exists():
+        return jsonify({"error": f"Base transactions file not found at {tx_path}"}), 500
+
+    # Dynamically infer expected schema from existing transactions.csv
+    try:
+        with open(tx_path, mode="r", encoding="utf-8-sig") as f:
+            ref_reader = csv.reader(f)
+            expected_header = next(ref_reader, None)
+    except Exception as exc:
+        return jsonify({"error": f"Failed to infer existing schema: {str(exc)}"}), 500
+
+    if not expected_header:
+        return jsonify({"error": "Base transactions.csv has no valid header row."}), 500
+
+    expected_columns = [col.strip() for col in expected_header if col is not None]
+
+    # Parse uploaded CSV header and records
+    try:
+        csv_reader = csv.DictReader(io.StringIO(content))
+        uploaded_fieldnames = csv_reader.fieldnames
+    except Exception as exc:
+        return jsonify({"error": f"Malformed CSV structure: {str(exc)}"}), 400
+
+    if not uploaded_fieldnames:
+        return jsonify({"error": "Uploaded CSV has no header row."}), 400
+
+    uploaded_columns = [col.strip() for col in uploaded_fieldnames if col is not None]
+
+    # Validate exact column match
+    if uploaded_columns != expected_columns:
+        return jsonify({
+            "error": "Column mismatch in uploaded CSV. Uploaded columns do not match expected schema.",
+            "expected_columns": expected_columns,
+            "received_columns": uploaded_columns,
+        }), 400
+
+    # Validate required fields exist in schema
+    required_fields = ["customer_id", "date", "amount"]
+    for req in required_fields:
+        if req not in expected_columns:
+            return jsonify({"error": f"System error: required field '{req}' not found in expected schema."}), 500
+
+    # Read existing IDs for deduplication
+    id_col = "transaction_id" if "transaction_id" in expected_columns else None
+    existing_ids = set()
+    if id_col:
+        try:
+            existing_df = pd.read_csv(tx_path)
+            if id_col in existing_df.columns:
+                existing_ids = set(existing_df[id_col].dropna().astype(str).str.strip())
+        except Exception as exc:
+            logger.warning("Could not pre-read existing transaction IDs: %s", exc)
+
+    seen_batch_ids = set()
+    rows_to_add = []
+    rows_rejected = []
+
+    # Iterate and validate rows
+    for row_idx, row in enumerate(csv_reader, start=1):
+        # Check required fields
+        missing_or_empty = []
+        for req in required_fields:
+            val = row.get(req)
+            if val is None or str(val).strip() == "":
+                missing_or_empty.append(req)
+
+        if missing_or_empty:
+            rows_rejected.append({
+                "row": row_idx,
+                "data": row,
+                "reason": f"Missing or empty required field(s): {', '.join(missing_or_empty)}",
+            })
+            continue
+
+        # Check numeric amount
+        try:
+            float(str(row["amount"]).replace(",", "").strip())
+        except ValueError:
+            rows_rejected.append({
+                "row": row_idx,
+                "data": row,
+                "reason": f"Invalid numeric amount '{row.get('amount')}'.",
+            })
+            continue
+
+        # Deduplicate if ID column exists
+        if id_col:
+            txn_id = str(row.get(id_col, "")).strip()
+            if txn_id:
+                if txn_id in existing_ids or txn_id in seen_batch_ids:
+                    rows_rejected.append({
+                        "row": row_idx,
+                        "data": row,
+                        "reason": f"Duplicate {id_col} '{txn_id}' already exists in database or current batch.",
+                    })
+                    continue
+                seen_batch_ids.add(txn_id)
+
+        rows_to_add.append({col: row.get(col, "") for col in expected_columns})
+
+    # Append valid rows to data/transactions.csv
+    if rows_to_add:
+        try:
+            new_df = pd.DataFrame(rows_to_add)[expected_columns]
+            new_df.to_csv(tx_path, mode="a", header=False, index=False, encoding="utf-8")
+        except Exception as exc:
+            return jsonify({"error": f"Failed writing new rows to transactions.csv: {str(exc)}"}), 500
+
+        # Refresh in-memory customer and investigation state
+        refresh_in_memory_data()
+
+    return jsonify({
+        "status": "success",
+        "rows_added": len(rows_to_add),
+        "rows_rejected": rows_rejected,
+        "total_processed": len(rows_to_add) + len(rows_rejected),
+        "message": f"Processed {len(rows_to_add) + len(rows_rejected)} rows: {len(rows_to_add)} added, {len(rows_rejected)} rejected.",
+    }), 200
+
+
+@app.post("/admin/upload-customers")
+def upload_customers():
+    """
+    Upload and merge new customer profiles from CSV or JSON.
+    Validates required fields ('id', 'name'), deduplicates by customer ID,
+    persists updates to data/customers.json, and refreshes the in-memory cache.
+    """
+    customers_path = DATA_DIR / "customers.json"
+    existing_customers = []
+    if customers_path.exists():
+        try:
+            existing_customers = json.loads(customers_path.read_text(encoding="utf-8"))
+            if not isinstance(existing_customers, list):
+                existing_customers = []
+        except Exception as exc:
+            logger.warning("Could not parse existing customers.json: %s", exc)
+            existing_customers = []
+
+    incoming_records = []
+
+    if "file" in request.files and request.files["file"].filename:
+        file = request.files["file"]
+        filename = file.filename or ""
+        try:
+            raw_text = file.read().decode("utf-8-sig")
+        except Exception as exc:
+            return jsonify({"error": f"Failed to decode uploaded file: {str(exc)}"}), 400
+
+        if not raw_text.strip():
+            return jsonify({"error": "Uploaded file is empty."}), 400
+
+        if filename.lower().endswith(".json"):
+            try:
+                parsed = json.loads(raw_text)
+                if isinstance(parsed, list):
+                    incoming_records = parsed
+                elif isinstance(parsed, dict):
+                    incoming_records = [parsed]
+                else:
+                    return jsonify({"error": "JSON customer file must contain a list of customer objects or a single customer object."}), 400
+            except Exception as exc:
+                return jsonify({"error": f"Malformed JSON content: {str(exc)}"}), 400
+        elif filename.lower().endswith(".csv"):
+            try:
+                csv_reader = csv.DictReader(io.StringIO(raw_text))
+                incoming_records = list(csv_reader)
+            except Exception as exc:
+                return jsonify({"error": f"Malformed CSV content: {str(exc)}"}), 400
+        else:
+            return jsonify({"error": "Unsupported file format. Please upload a .json or .csv customer file."}), 400
+
+    elif request.is_json:
+        parsed = request.get_json(silent=True)
+        if isinstance(parsed, list):
+            incoming_records = parsed
+        elif isinstance(parsed, dict):
+            incoming_records = [parsed]
+        else:
+            return jsonify({"error": "JSON payload must be an array of customer objects or a single customer object."}), 400
+    else:
+        return jsonify({"error": "No file or JSON body provided. Upload a file with key 'file' (.json or .csv) or POST JSON body."}), 400
+
+    if not incoming_records:
+        return jsonify({"error": "No customer records found in payload."}), 400
+
+    existing_cids = {
+        str(c["id"]).strip()
+        for c in existing_customers
+        if isinstance(c, dict) and "id" in c and c["id"]
+    }
+
+    seen_batch_cids = set()
+    records_to_add = []
+    rows_rejected = []
+
+    for idx, rec in enumerate(incoming_records, start=1):
+        if not isinstance(rec, dict):
+            rows_rejected.append({
+                "row": idx,
+                "data": rec,
+                "reason": "Customer entry must be a dictionary/object.",
+            })
+            continue
+
+        cid = str(rec.get("id", "")).strip()
+        name = str(rec.get("name", "")).strip()
+
+        if not cid or not name:
+            missing = []
+            if not cid:
+                missing.append("id")
+            if not name:
+                missing.append("name")
+            rows_rejected.append({
+                "row": idx,
+                "data": rec,
+                "reason": f"Missing required field(s): {', '.join(missing)}",
+            })
+            continue
+
+        if cid in existing_cids or cid in seen_batch_cids:
+            rows_rejected.append({
+                "row": idx,
+                "data": rec,
+                "reason": f"Customer ID '{cid}' already exists in database or is duplicated in uploaded batch.",
+            })
+            continue
+
+        clean_rec = {
+            "id": cid,
+            "name": name,
+            "profile": str(rec.get("profile", "standard")),
+            "customer_since": str(rec.get("customer_since", "New Account")),
+            "last_analysed": str(rec.get("last_analysed", datetime.now().strftime("%d %b %Y, %H:%M"))),
+            "account_number": str(rec.get("account_number", f"•••• •••• {cid[-4:] if len(cid)>=4 else '0000'}")),
+            "account_type": str(rec.get("account_type", "Savings Classic")),
+            "branch": str(rec.get("branch", "Main Branch")),
+            "phone": str(rec.get("phone", "+91 98000 00000")),
+            "email": str(rec.get("email", f"{cid.lower()}@example.com")),
+            "transaction_count": int(rec.get("transaction_count", 0)) if str(rec.get("transaction_count", "")).isdigit() else 0,
+            "date_start": rec.get("date_start"),
+            "date_end": rec.get("date_end"),
+        }
+        for k, v in rec.items():
+            if k not in clean_rec:
+                clean_rec[k] = v
+
+        seen_batch_cids.add(cid)
+        records_to_add.append(clean_rec)
+
+    if records_to_add:
+        merged = existing_customers + records_to_add
+        try:
+            customers_path.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+        except Exception as exc:
+            return jsonify({"error": f"Failed writing to customers.json: {str(exc)}"}), 500
+
+        refresh_in_memory_data()
+
+    return jsonify({
+        "status": "success",
+        "rows_added": len(records_to_add),
+        "rows_rejected": rows_rejected,
+        "total_processed": len(records_to_add) + len(rows_rejected),
+        "message": f"Processed {len(records_to_add) + len(rows_rejected)} customer records: {len(records_to_add)} added, {len(rows_rejected)} rejected.",
+    }), 200
+
+
+@app.get("/admin")
+@app.get("/admin/upload")
+def admin_page():
+    """
+    Serve the admin upload interface.
+    NOTE: Hackathon-grade admin endpoint. Add authentication before production deployment.
+    """
+    index_file = Path(app.static_folder) / "index.html"
+    if index_file.exists():
+        return send_from_directory(app.static_folder, "index.html")
+    return "SentinelView Admin Upload Panel", 200
 
 
 @app.get("/<path:path>")

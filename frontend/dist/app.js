@@ -38,6 +38,7 @@ const tabViews = {
   alerts: document.getElementById('view-alerts'),
   reports: document.getElementById('view-reports'),
   settings: document.getElementById('view-settings'),
+  upload: document.getElementById('view-upload'),
 };
 
 // Center Column Elements
@@ -1612,3 +1613,221 @@ window.filterModalTx = function(filter) {
         `;
     }).join('');
 };
+
+/* ==========================================================================
+   Admin Upload Handlers & Runtime Cache Refresh
+   ========================================================================== */
+
+async function reloadSystemData() {
+  try {
+    const res = await fetch('/api/customers');
+    const customers = await res.json();
+    state.customers = customers || [];
+    state.investigationCache = {};
+
+    const highRiskCount = state.customers.filter((c) => c.risk_level === 'high').length;
+    if (riskAlertsBadge) riskAlertsBadge.textContent = highRiskCount || '0';
+    if (customerTotalCountEl) customerTotalCountEl.textContent = state.customers.length;
+
+    renderCustomerList(customerSearchInput ? customerSearchInput.value : '');
+
+    if (state.customers.length > 0) {
+      const exists = state.customers.some((c) => c.id === state.currentCustomerId);
+      const targetId = exists ? state.currentCustomerId : state.customers[0].id;
+      await selectCustomer(targetId);
+
+      // Pre-warm client cache in background
+      state.customers.forEach(async (c) => {
+        try {
+          const cRes = await fetch(`/api/customers/${c.id}/investigate`, { method: 'POST' });
+          const cData = await cRes.json();
+          state.investigationCache[c.id] = cData;
+        } catch (e) {}
+      });
+    }
+  } catch (err) {
+    console.error('Failed to reload system data:', err);
+  }
+}
+
+// Transactions Upload Form
+const uploadTxForm = document.getElementById('uploadTxForm');
+const txUploadResult = document.getElementById('txUploadResult');
+const btnUploadTx = document.getElementById('btnUploadTx');
+
+if (uploadTxForm) {
+  uploadTxForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!btnUploadTx || !txUploadResult) return;
+
+    const fileInput = document.getElementById('txFileInput');
+    if (!fileInput || !fileInput.files.length) {
+      showToast('Please select a CSV file first.');
+      return;
+    }
+
+    btnUploadTx.disabled = true;
+    btnUploadTx.innerHTML = '<span>Processing Upload...</span>';
+    txUploadResult.className = 'hidden';
+
+    try {
+      const formData = new FormData(uploadTxForm);
+      const response = await fetch('/admin/upload-transactions', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        let rejectedHtml = '';
+        if (data.rows_rejected && data.rows_rejected.length > 0) {
+          rejectedHtml = `
+            <div style="margin-top: 8px; font-size: 12px; color: #b45309;">
+              <strong>Rejected Rows (${data.rows_rejected.length}):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; max-height: 120px; overflow-y: auto;">
+                ${data.rows_rejected.map(r => `<li>Row ${r.row}: ${r.reason}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }
+
+        txUploadResult.className = '';
+        txUploadResult.style.background = 'rgba(16, 185, 129, 0.1)';
+        txUploadResult.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        txUploadResult.style.color = '#065f46';
+        txUploadResult.innerHTML = `
+          <div style="font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+            <span>Upload Completed Successfully</span>
+            <span><span class="badge-pill" style="background:#10b981; color:#fff;">+${data.rows_added} Rows</span></span>
+          </div>
+          <div style="margin-top: 4px;">${data.message || ''}</div>
+          ${rejectedHtml}
+        `;
+
+        showToast(`Transactions updated: +${data.rows_added} added.`);
+        uploadTxForm.reset();
+        await reloadSystemData();
+      } else {
+        txUploadResult.className = '';
+        txUploadResult.style.background = 'rgba(239, 68, 68, 0.1)';
+        txUploadResult.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        txUploadResult.style.color = '#991b1b';
+        txUploadResult.innerHTML = `
+          <div style="font-weight: 600;">Upload Failed</div>
+          <div style="margin-top: 4px;">${data.error || 'Unknown error occurred while processing CSV.'}</div>
+          ${data.expected_columns ? `<div style="font-size: 11px; margin-top: 4px; font-family: monospace;">Expected columns: ${data.expected_columns.join(', ')}</div>` : ''}
+        `;
+        showToast('CSV Upload Failed: ' + (data.error || 'Server error'));
+      }
+    } catch (err) {
+      console.error('Transactions upload error:', err);
+      txUploadResult.className = '';
+      txUploadResult.style.background = 'rgba(239, 68, 68, 0.1)';
+      txUploadResult.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+      txUploadResult.style.color = '#991b1b';
+      txUploadResult.innerHTML = `<strong>Error:</strong> Failed to connect to server.`;
+      showToast('Network error during upload.');
+    } finally {
+      btnUploadTx.disabled = false;
+      btnUploadTx.innerHTML = `
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>Ingest Transactions</span>
+      `;
+    }
+  });
+}
+
+// Customers Upload Form
+const uploadCustForm = document.getElementById('uploadCustForm');
+const custUploadResult = document.getElementById('custUploadResult');
+const btnUploadCust = document.getElementById('btnUploadCust');
+
+if (uploadCustForm) {
+  uploadCustForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!btnUploadCust || !custUploadResult) return;
+
+    const fileInput = document.getElementById('custFileInput');
+    if (!fileInput || !fileInput.files.length) {
+      showToast('Please select a JSON or CSV file first.');
+      return;
+    }
+
+    btnUploadCust.disabled = true;
+    btnUploadCust.innerHTML = '<span>Processing Upload...</span>';
+    custUploadResult.className = 'hidden';
+
+    try {
+      const formData = new FormData(uploadCustForm);
+      const response = await fetch('/admin/upload-customers', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        let rejectedHtml = '';
+        if (data.rows_rejected && data.rows_rejected.length > 0) {
+          rejectedHtml = `
+            <div style="margin-top: 8px; font-size: 12px; color: #b45309;">
+              <strong>Rejected Records (${data.rows_rejected.length}):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; max-height: 120px; overflow-y: auto;">
+                ${data.rows_rejected.map(r => `<li>Row ${r.row}: ${r.reason}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }
+
+        custUploadResult.className = '';
+        custUploadResult.style.background = 'rgba(99, 102, 241, 0.1)';
+        custUploadResult.style.border = '1px solid rgba(99, 102, 241, 0.3)';
+        custUploadResult.style.color = '#3730a3';
+        custUploadResult.innerHTML = `
+          <div style="font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+            <span>Customers Ingested Successfully</span>
+            <span><span class="badge-pill" style="background:#6366f1; color:#fff;">+${data.rows_added} Profiles</span></span>
+          </div>
+          <div style="margin-top: 4px;">${data.message || ''}</div>
+          ${rejectedHtml}
+        `;
+
+        showToast(`Customer profiles updated: +${data.rows_added} added.`);
+        uploadCustForm.reset();
+        await reloadSystemData();
+      } else {
+        custUploadResult.className = '';
+        custUploadResult.style.background = 'rgba(239, 68, 68, 0.1)';
+        custUploadResult.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        custUploadResult.style.color = '#991b1b';
+        custUploadResult.innerHTML = `
+          <div style="font-weight: 600;">Upload Failed</div>
+          <div style="margin-top: 4px;">${data.error || 'Unknown error occurred while processing customers.'}</div>
+        `;
+        showToast('Customer Upload Failed: ' + (data.error || 'Server error'));
+      }
+    } catch (err) {
+      console.error('Customer upload error:', err);
+      custUploadResult.className = '';
+      custUploadResult.style.background = 'rgba(239, 68, 68, 0.1)';
+      custUploadResult.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+      custUploadResult.style.color = '#991b1b';
+      custUploadResult.innerHTML = `<strong>Error:</strong> Failed to connect to server.`;
+      showToast('Network error during upload.');
+    } finally {
+      btnUploadCust.disabled = false;
+      btnUploadCust.innerHTML = `
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>Ingest Customer Profiles</span>
+      `;
+    }
+  });
+}
+
