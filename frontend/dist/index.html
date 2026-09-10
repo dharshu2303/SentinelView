@@ -703,8 +703,8 @@
       <main class="tab-view panel-view hidden" id="view-upload">
         <div class="view-header">
           <div>
-            <h2>Admin Data Ingestion &amp; Live Invalidation</h2>
-            <p class="view-subtitle">Upload updated transaction journals (CSV) or customer databases (CSV/JSON) into runtime memory.</p>
+            <h2>Admin Data Ingestion</h2>
+            <p class="view-subtitle">Upload updated transaction journals (CSV) into runtime memory.</p>
           </div>
           <div class="view-header-right">
             <span class="live-indicator"><span class="live-dot" style="background-color: #3b82f6;"></span> Admin Workbench</span>
@@ -721,10 +721,7 @@
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
               </svg>
             </div>
-            <div class="banner-content">
-              <h3 style="color: var(--text-main, #1e293b); font-size: 14px;">ADMIN ENVIRONMENT NOTICE</h3>
-              <p style="color: var(--text-muted, #64748b); font-size: 13px;">Uploaded datasets are validated, deduplicated, appended to runtime files, and immediately hot-reloaded into the investigation cache. <em>Note: Authentication should be configured before real-world production deployment.</em></p>
-            </div>
+      
           </div>
         </div>
 
@@ -742,7 +739,7 @@
                 </svg>
                 <h3>Upload Transactions (CSV)</h3>
               </div>
-              <span class="badge-pill" style="background: rgba(16, 185, 129, 0.1); color: #059669; font-size: 11px;">POST /admin/upload-transactions</span>
+              
             </div>
             <div class="settings-body">
               <p class="form-hint" style="margin-bottom: 12px;">
@@ -780,7 +777,7 @@
                 </svg>
                 <h3>Upload Customer Profiles (JSON / CSV)</h3>
               </div>
-              <span class="badge-pill" style="background: rgba(99, 102, 241, 0.1); color: #4f46e5; font-size: 11px;">POST /admin/upload-customers</span>
+       
             </div>
             <div class="settings-body">
               <p class="form-hint" style="margin-bottom: 12px;">
